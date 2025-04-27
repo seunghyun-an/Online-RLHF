@@ -5,7 +5,7 @@ eval "$(conda shell.bash hook)"
 
 
 # Base paths and settings
-initial_model="RLHFlow/LLaMA3-SFT-v2" 
+initial_model="RLHFlow/LLaMA3.2-3B-SFT" 
 #"meta-llama/Meta-Llama-3-8B-Instruct"
 base_path="./iter_dpo"
 #"/home/wx/Iterative-RLHF-dev/test"

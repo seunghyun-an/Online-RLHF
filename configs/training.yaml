@@ -2,8 +2,8 @@ choose_type: max_min
 train_dir: ./data/data_with_rewards.jsonl
 eval_dir: ./data/data_with_rewards.jsonl
 output_dir: ./pipeline_test
-model_name_or_path: RLHFlow/LLaMA3-SFT
-ref_model: RLHFlow/LLaMA3-SFT
+model_name_or_path: RLHFlow/LLaMA3.2-1B-SFT
+ref_model: RLHFlow/LLaMA3.2-1B-SFT
 bf16: true
 per_device_train_batch_size: 1
 per_device_eval_batch_size: 1

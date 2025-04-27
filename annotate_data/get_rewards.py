@@ -118,7 +118,10 @@ with torch.no_grad():
         
         rewards = get_reward(test_texts)
         data.append({"prompt": sample["prompt"], "responses": sample["responses"], "rewards": rewards})
+        # break
 
+with open("data.json", "w") as file:
+    json.dump(data, file, indent=4)
 
 # Send the data to other GPUs
 world_size = int(os.getenv("WORLD_SIZE", "1"))

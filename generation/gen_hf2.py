@@ -83,9 +83,10 @@ llm = LLM(
     model=model_path,
     tokenizer=model_path,
     dtype="bfloat16",
+    block_size=32,
     max_model_len=script_args.max_input_length,
     load_format="auto",
-    seed=42,
+    seed=421,
 )
 tokenizer = AutoTokenizer.from_pretrained(model_path)
 

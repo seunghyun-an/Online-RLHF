@@ -5,7 +5,7 @@ eval "$(conda shell.bash hook)"
 
 
 # Base paths and settings
-initial_model="RLHFlow/LLaMA3-SFT-v2"
+initial_model="RLHFlow/LLaMA3.2-1B-SFT"
 #"meta-llama/Meta-Llama-3-8B-Instruct"
 base_path="./iter_dpo"
 #"/home/wx/Iterative-RLHF-dev/test"
@@ -28,22 +28,16 @@ run_iteration() {
     #sleep 140
     #python generation/gen_hf2.py --model_name_or_path $model_path dataset_name_or_path $jsonl_input 
     #pkill -f "python -m vllm.entrypoints.api_server"
-    my_world_size=8
+    my_world_size=1
     infer_model=$2
     prompt_dir=$3
     output_dir=$4
     CUDA_VISIBLE_DEVICES=0 python ./generation/gen_hf2.py --model_name_or_path ${infer_model} --dataset_name_or_path ${prompt_dir} --output_dir ${output_dir} --K 4 --temperature 1.0 --local_index 0 --my_world_size ${my_world_size} --eos_ids 128009 &
-CUDA_VISIBLE_DEVICES=1 python ./generation/gen_hf2.py --model_name_or_path ${infer_model} --dataset_name_or_path ${prompt_dir} --output_dir ${output_dir} --K 4 --temperature 1.0 --local_index 1 --my_world_size ${my_world_size} --eos_ids 128009 &
-CUDA_VISIBLE_DEVICES=2 python ./generation/gen_hf2.py --model_name_or_path ${infer_model} --dataset_name_or_path ${prompt_dir} --output_dir ${output_dir} --K 4 --temperature 1.0 --local_index 2 --my_world_size ${my_world_size} --eos_ids 128009 &
-CUDA_VISIBLE_DEVICES=3 python ./generation/gen_hf2.py --model_name_or_path ${infer_model} --dataset_name_or_path ${prompt_dir} --output_dir ${output_dir} --K 4 --temperature 1.0 --local_index 3 --my_world_size ${my_world_size} --eos_ids 128009 &
-CUDA_VISIBLE_DEVICES=4 python ./generation/gen_hf2.py --model_name_or_path ${infer_model} --dataset_name_or_path ${prompt_dir} --output_dir ${output_dir} --K 4 --temperature 1.0 --local_index 4 --my_world_size ${my_world_size} --eos_ids 128009 &
-CUDA_VISIBLE_DEVICES=5 python ./generation/gen_hf2.py --model_name_or_path ${infer_model} --dataset_name_or_path ${prompt_dir} --output_dir ${output_dir} --K 4 --temperature 1.0 --local_index 5 --my_world_size ${my_world_size} --eos_ids 128009 &
-CUDA_VISIBLE_DEVICES=6 python ./generation/gen_hf2.py --model_name_or_path ${infer_model} --dataset_name_or_path ${prompt_dir} --output_dir ${output_dir} --K 4 --temperature 1.0 --local_index 6 --my_world_size ${my_world_size} --eos_ids 128009 &
-CUDA_VISIBLE_DEVICES=7 python ./generation/gen_hf2.py --model_name_or_path ${infer_model} --dataset_name_or_path ${prompt_dir} --output_dir ${output_dir} --K 4 --temperature 1.0 --local_index 7 --my_world_size ${my_world_size} --eos_ids 128009 &
     wait
     python ./generation/merge_data.py --base_path ${output_dir} --output_dir "${output_dir}_data.jsonl" --num_datasets 8
     accelerate launch annotate_data/get_rewards.py --dataset_name_or_path "${output_dir}_data.jsonl" --output_dir $model_output
     conda activate rlhflow
+    echo step 3
     cat <<EOT > dpo_config.yaml
 run_name: $iteration
 output_dir: $iteration

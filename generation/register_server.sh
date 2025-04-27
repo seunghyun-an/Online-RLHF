@@ -10,7 +10,7 @@ fi
 MODEL_PATH=$1
 
 # we use for loop to create 8 vllm instances, with different GPUs
-for i in 0 1 2 3 4 5 6 7
+for i in 0
 do
     CUDA_VISIBLE_DEVICES=$i python -m vllm.entrypoints.api_server \
         --model $MODEL_PATH \
