@@ -475,13 +475,15 @@ class MyDPOTrainer(DPOTrainer):
                     ) = self.concatenated_forward(self.ref_model, batch)
         if self.loss_type == 'inpo':
             with torch.no_grad():
+                tmp =self.concatenated_forward(self.pi_t_model, batch)
                 (
                         pi_t_chosen_logps,
                         pi_t_rejected_logps,
                     _,
                     _,
                     _,
-                ) = self.concatenated_forward(self.pi_t_model, batch)
+                ) = tmp
+                del tmp
 
         if self.loss_type == 'inpo':
             losses, chosen_rewards, rejected_rewards = self.dpo_loss(
