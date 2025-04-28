@@ -35,6 +35,7 @@ class MyDPOTrainer(DPOTrainer):
         self,
         model: Optional[Union[PreTrainedModel, nn.Module, str]] = None,
         ref_model: Optional[Union[PreTrainedModel, nn.Module, str]] = None,
+        pi_t_model: Optional[Union[PreTrainedModel, nn.Module, str]] = None,
         beta: float = 0.1,
         label_smoothing: float = 0,
         loss_type: Optional[str] = None,
@@ -110,6 +111,9 @@ class MyDPOTrainer(DPOTrainer):
         policy_rejected_logps: torch.FloatTensor,
         reference_chosen_logps: torch.FloatTensor,
         reference_rejected_logps: torch.FloatTensor,
+        pi_t_chosen_logps: Optional[torch.FloatTensor] = None,
+        pi_t_rejected_logps: Optional[torch.FloatTensor] = None ,
+        
     ) -> Tuple[torch.FloatTensor, torch.FloatTensor, torch.FloatTensor]:
         """Compute the DPO loss for a batch of policy and reference model log probabilities.
 
@@ -266,8 +270,9 @@ class MyDPOTrainer(DPOTrainer):
             
         elif self.loss_type == "inpo":
             tau = 0.1
-            eta = 0.1
+            eta = 0.1            
             policy_logratios = policy_chosen_logps - policy_rejected_logps
+            policy_logratios = policy_logratios.to(self.accelerator.device)
             reference_logratios = reference_chosen_logps - reference_rejected_logps
             reference_term = (tau / eta) * reference_logratios
             pi_t_logratios = pi_t_chosen_logps - pi_t_rejected_logps
@@ -468,7 +473,15 @@ class MyDPOTrainer(DPOTrainer):
                         _,
                         _,
                     ) = self.concatenated_forward(self.ref_model, batch)
-
+        if self.loss_type == 'inpo':
+            with torch.no_grad():
+                (
+                        pi_t_chosen_logps,
+                        pi_t_rejected_logps,
+                    _,
+                    _,
+                    _,
+                ) = self.concatenated_forward(self.pi_t_model, batch)
         losses, chosen_rewards, rejected_rewards = self.dpo_loss(
             policy_chosen_logps,
             policy_rejected_logps,

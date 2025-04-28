@@ -1,6 +1,7 @@
 import os
 from dataclasses import dataclass, field
 from typing import Optional
+import copy
 
 import numpy as np
 import torch
@@ -194,7 +195,17 @@ if __name__ == "__main__":
     
     parser = H4ArgumentParser((ScriptArguments, DPOConfig, ModelConfig))
     script_args, training_args, model_config = parser.parse()
-
+    
+    if script_args.pi_t_model:
+        pi_t_name = script_args.pi_t_model
+    else:
+        pi_t_name = model_config.model_name_or_path
+# --- 1. Prepare pi_t model ---
+    model_pi_t = AutoModelForCausalLM.from_pretrained(
+        pi_t_name,
+        torch_dtype=torch.bfloat16,
+        attn_implementation="flash_attention_2",
+    )
     # 1. load a pretrained model
     model = AutoModelForCausalLM.from_pretrained(
         model_config.model_name_or_path,
@@ -226,10 +237,13 @@ if __name__ == "__main__":
         tokenizer.add_special_tokens({"pad_token": "[PAD]"})
         model.config.vocab_size += 1
         model_ref.config.vocab_size += 1
+        model_pi_t.config.vocab_size += 1
         model.config.pad_token_id = tokenizer.pad_token_id
         model_ref.config.pad_token_id = tokenizer.pad_token_id
+        model_pi_t.config.pad_token_id = tokenizer.pad_token_id
         model.resize_token_embeddings(len(tokenizer))
         model_ref.resize_token_embeddings(len(tokenizer))
+        model_pi_t.resize_token_embeddings(len(tokenizer))
 
 
     # 2. Load the Stack-exchange paired dataset
@@ -284,6 +298,7 @@ if __name__ == "__main__":
     dpo_trainer = MyDPOTrainer(
         model,
         model_ref,
+        pi_t_model=model_pi_t,
         args=training_args,
         train_dataset=train_dataset,
         eval_dataset=eval_dataset,
@@ -292,6 +307,7 @@ if __name__ == "__main__":
         max_length=training_args.max_length,
         max_prompt_length=training_args.max_prompt_length,
         loss_type=training_args.loss_type,
+        
     )
     print("begin to train")
 
