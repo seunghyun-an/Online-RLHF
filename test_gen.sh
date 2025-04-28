@@ -6,8 +6,8 @@ source ~/.bashrc
 eval "$(conda shell.bash hook)"
 
 my_world_size=1 # how many gpu you use
-infer_model=LLaMA3_iter1
-prompt_dir=RLHFlow/ultrafeedback_iter1
+infer_model=kasbar/LLaMA3.2-1B-INPO_iter1
+prompt_dir=RLHFlow/ultrafeedback_iter2
 
 mkdir data
 output_dir=./data/gen_data
@@ -17,5 +17,5 @@ CUDA_VISIBLE_DEVICES=0 python ./generation/gen_hf2.py --model_name_or_path ${inf
 
 # then, we merge the 8 datasets into one dataset.
 wait
-python ./generation/merge_data.py --base_path ${output_dir} --output_dir ./data/gen_data_iter1.json --num_datasets ${my_world_size}
+python ./generation/merge_data.py --base_path ${output_dir} --output_dir ./data/gen_data_iter2.json --num_datasets ${my_world_size}
 

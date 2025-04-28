@@ -263,6 +263,26 @@ class MyDPOTrainer(DPOTrainer):
             )  # Decrease rejected likelihood more
 
             losses = losses_chosen + losses_rejected
+            
+        elif self.loss_type == "inpo":
+            tau = 0.1
+            eta = 0.1
+            policy_logratios = policy_chosen_logps - policy_rejected_logps
+            reference_logratios = reference_chosen_logps - reference_rejected_logps
+            reference_term = (tau / eta) * reference_logratios
+            pi_t_logratios = pi_t_chosen_logps - pi_t_rejected_logps
+            pi_t_term = ((eta - tau) / eta) * pi_t_logratios
+
+            # Combine terms to get h_t
+            h_t = policy_logratios - reference_term - pi_t_term
+
+            # Calculate the final loss from Eq. (8) (sampled version)
+            # Loss = (h_t - 1 / (2 * eta))^2
+            if (2 * eta) <= 0:
+                 raise ValueError("2 * eta must be positive for the target offset.")
+            target = 1.0 / (2.0 * eta)
+            losses = (h_t - target) ** 2
+
 
         else:
             raise ValueError(
