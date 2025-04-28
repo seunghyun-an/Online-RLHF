@@ -42,6 +42,11 @@ class ScriptArguments:
         default="./data/uf_split0_responses_K8_reward.json",
         metadata={"help": "the location of the dataset name or path"},
     )
+
+    pi_t_model: Optional[str] = field(
+        default="",
+        metadata={"help": "the location of the previous iter SFT model name or path"},
+    )
     eval_dir: Optional[str] = field(
         default="/export/home/hanze/project/vllm-gen/uf_split0_offline_reward.json",  # "/export/home/data/gemma_it_2b_3w_k8_with_pairrm_rewards.json",
         metadata={"help": "the location of the evalset name or path"},

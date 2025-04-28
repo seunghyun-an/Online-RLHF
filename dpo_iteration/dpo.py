@@ -103,6 +103,7 @@ class MyDPOTrainer(DPOTrainer):
             reference_free=reference_free,
             force_use_ref_model=force_use_ref_model,
         )
+        self.pi_t_model = pi_t_model.to(self.accelerator.device)
 
 
     def dpo_loss(
@@ -135,6 +136,9 @@ class MyDPOTrainer(DPOTrainer):
             not self.reference_free
         ) * reference_rejected_logps.to(self.accelerator.device)
 
+        pi_t_logratios = pi_t_chosen_logps.to(self.accelerator.device) - pi_t_rejected_logps.to(self.accelerator.device)
+        reference_logratios = reference_chosen_logps.to(self.accelerator.device) - reference_rejected_logps.to(self.accelerator.device)
+        policy_logratios = policy_chosen_logps.to(self.accelerator.device) - policy_rejected_logps.to(self.accelerator.device)
         if self.f_divergence_type == FDivergenceType.ALPHA_DIVERGENCE.value:
             # The alpha-divergence formula: (1 - u^-alpha) / alpha
             # The divergence difference between the chosen and rejected sample is:
@@ -271,11 +275,7 @@ class MyDPOTrainer(DPOTrainer):
         elif self.loss_type == "inpo":
             tau = 0.1
             eta = 0.1            
-            policy_logratios = policy_chosen_logps - policy_rejected_logps
-            policy_logratios = policy_logratios.to(self.accelerator.device)
-            reference_logratios = reference_chosen_logps - reference_rejected_logps
             reference_term = (tau / eta) * reference_logratios
-            pi_t_logratios = pi_t_chosen_logps - pi_t_rejected_logps
             pi_t_term = ((eta - tau) / eta) * pi_t_logratios
 
             # Combine terms to get h_t
@@ -482,12 +482,24 @@ class MyDPOTrainer(DPOTrainer):
                     _,
                     _,
                 ) = self.concatenated_forward(self.pi_t_model, batch)
-        losses, chosen_rewards, rejected_rewards = self.dpo_loss(
-            policy_chosen_logps,
-            policy_rejected_logps,
-            reference_chosen_logps,
-            reference_rejected_logps,
-        )
+
+        if self.loss_type == 'inpo':
+            losses, chosen_rewards, rejected_rewards = self.dpo_loss(
+                policy_chosen_logps,
+                policy_rejected_logps,
+                reference_chosen_logps,
+                reference_rejected_logps,
+                pi_t_chosen_logps,
+                pi_t_rejected_logps,
+            )
+        else:
+            losses, chosen_rewards, rejected_rewards = self.dpo_loss(
+                policy_chosen_logps,
+                policy_rejected_logps,
+                reference_chosen_logps,
+                reference_rejected_logps,
+
+            )
         reward_accuracies = (chosen_rewards > rejected_rewards).float()
 
         if self.args.rpo_alpha is not None:
